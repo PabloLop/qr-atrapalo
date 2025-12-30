@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Recordatorio reseña Atrápalo</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 0; background:#0b0b0c; color:#f4f4f5; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 28px 18px 40px; }
+    .card { background:#141417; border:1px solid #2a2a30; border-radius:16px; padding:18px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    p { line-height: 1.35; margin: 10px 0; color:#d6d6db; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; margin-top: 14px; }
+    a.btn, button.btn {
+      appearance:none; border:1px solid #3a3a44; background:#1f1f25; color:#fff;
+      padding:12px 14px; border-radius:12px; text-decoration:none; font-weight:600; cursor:pointer;
+      flex: 1 1 240px; text-align:center;
+    }
+    a.btn:hover, button.btn:hover { background:#26262e; }
+    .small { font-size: 12px; color:#a7a7b2; margin-top:10px; }
+    code { background:#1b1b20; padding:2px 6px; border-radius:8px; }
+    .muted { color:#b8b8c2; }
+    .hr { height:1px; background:#2a2a30; margin: 14px 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>📌 Recordatorio: deja tu reseña en Atrápalo</h1>
+      <p>Te pongo un recordatorio para <b>dentro de 2 días</b> (cuando suele llegar el email) para que revises tu correo y dejes la reseña. ❤️</p>
+
+      <div class="hr"></div>
+
+      <p class="muted"><b>¿Cuándo te avisará?</b><br>
+        <span id="whenText">Calculando…</span>
+      </p>
+
+      <div class="row">
+        <a id="googleLink" class="btn" href="#" rel="nofollow">Añadir a Google Calendar</a>
+        <button id="appleBtn" class="btn" type="button">Añadir a iPhone / Apple Calendar</button>
+      </div>
+
+      <p class="small">Si no usas calendario, igualmente: en 2 días busca en Gmail “Atrápalo” (mira también <i>Promociones</i> o <i>Spam</i>).</p>
+      <p class="small">Tip: si el botón de Apple no abre directamente, te descargará un archivo <code>.ics</code>. Ábrelo y se añade al Calendario.</p>
+    </div>
+  </div>
+
+<script>
+(function () {
+  // === PERSONALIZA AQUÍ ===
+  const EVENT_TITLE = "Recordatorio: reseña en Atrápalo";
+  const EVENT_LOCATION = "";
+  const EVENT_DETAILS =
+`Revisa tu correo de Atrápalo y deja la reseña del show.
+• Busca "Atrápalo" en Gmail
+• Mira también Promociones/Spam
+¡Gracias!`;
+
+  // Hora del recordatorio: 19:00 local (ajústalo si quieres)
+  const REMINDER_HOUR = 19;
+  const REMINDER_MINUTE = 0;
+
+  // Días en el futuro
+  const DAYS_AHEAD = 2;
+
+  // Duración del evento (min)
+  const DURATION_MINUTES = 10;
+
+  // === LÓGICA ===
+  const now = new Date();
+  const start = new Date(now);
+  start.setDate(start.getDate() + DAYS_AHEAD);
+  start.setHours(REMINDER_HOUR, REMINDER_MINUTE, 0, 0);
+
+  const end = new Date(start);
+  end.setMinutes(end.getMinutes() + DURATION_MINUTES);
+
+  // Mostrar texto humano
+  const fmt = new Intl.DateTimeFormat('es-ES', { weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  document.getElementById('whenText').textContent = fmt.format(start);
+
+  // Google Calendar template URL
+  // dates en formato YYYYMMDDTHHMMSSZ (UTC). Convertimos a UTC:
+  function toUTCCompact(d) {
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth()+1).padStart(2,'0');
+    const day = String(d.getUTCDate()).padStart(2,'0');
+    const hh = String(d.getUTCHours()).padStart(2,'0');
+    const mm = String(d.getUTCMinutes()).padStart(2,'0');
+    const ss = String(d.getUTCSeconds()).padStart(2,'0');
+    return `${y}${m}${day}T${hh}${mm}${ss}Z`;
+  }
+
+  const gUrl = new URL("https://calendar.google.com/calendar/render");
+  gUrl.searchParams.set("action", "TEMPLATE");
+  gUrl.searchParams.set("text", EVENT_TITLE);
+  gUrl.searchParams.set("dates", `${toUTCCompact(start)}/${toUTCCompact(end)}`);
+  if (EVENT_DETAILS) gUrl.searchParams.set("details", EVENT_DETAILS);
+  if (EVENT_LOCATION) gUrl.searchParams.set("location", EVENT_LOCATION);
+
+  document.getElementById("googleLink").href = gUrl.toString();
+
+  // ICS generator for Apple Calendar
+  function icsEscape(s) {
+    return String(s)
+      .replace(/\\/g, "\\\\")
+      .replace(/\n/g, "\\n")
+      .replace(/,/g, "\\,")
+      .replace(/;/g, "\\;");
+  }
+
+  // ICS uses UTC timestamps
+  function toICSUTC(d) {
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth()+1).padStart(2,'0');
+    const day = String(d.getUTCDate()).padStart(2,'0');
+    const hh = String(d.getUTCHours()).padStart(2,'0');
+    const mm = String(d.getUTCMinutes()).padStart(2,'0');
+    const ss = String(d.getUTCSeconds()).padStart(2,'0');
+    return `${y}${m}${day}T${hh}${mm}${ss}Z`;
+  }
+
+  const uid = `atrapalo-review-${Date.now()}@qr`;
+  const dtstamp = toICSUTC(new Date());
+
+  const ics =
+`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//QR Reseña Atrapalo//ES
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:${uid}
+DTSTAMP:${dtstamp}
+DTSTART:${toICSUTC(start)}
+DTEND:${toICSUTC(end)}
+SUMMARY:${icsEscape(EVENT_TITLE)}
+DESCRIPTION:${icsEscape(EVENT_DETAILS)}
+LOCATION:${icsEscape(EVENT_LOCATION)}
+END:VEVENT
+END:VCALENDAR`;
+
+  document.getElementById("appleBtn").addEventListener("click", () => {
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "recordatorio-atrapalo.ics";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+})();
+</script>
+</body>
+</html>
